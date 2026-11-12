@@ -15,4 +15,16 @@
     <string name="close">Close</string>
     <string name="clip_label">Password</string>
     <string name="toast_copied">Password copied</string>
+    <string name="tile_label">Lik31 Password</string>
+    <string name="tile_subtitle">Generate password</string>
+    <string name="main_key_saved">Main Key · saved</string>
+    <string name="main_key_saved_placeholder">Type to change</string>
+    <string name="main_key_is_saved">Main key is saved</string>
+    <string name="save_main_key">Save main key on this device</string>
+    <string name="save_failed">Could not save the main key</string>
+    <string name="config_applied">Last settings applied</string>
+    <string name="disable_save_title">Stop saving the main key?</string>
+    <string name="disable_save_text">The encrypted main key stored on this device will be deleted. You will need to type the main key every time. Remembered lengths and symbols are kept.</string>
+    <string name="disable_save_confirm">Stop saving</string>
+    <string name="cancel">Cancel</string>
 </resources>

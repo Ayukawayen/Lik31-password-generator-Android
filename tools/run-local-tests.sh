@@ -14,9 +14,8 @@ STDLIB="$(ls "$LIB"/kotlin-stdlib-*.jar)"
 JUNIT="$(ls "$LIB"/junit-4*.jar):$(ls "$LIB"/hamcrest-core-*.jar)"
 
 SOURCES=("$ROOT/core-lik31/src/main/kotlin" "$ROOT/core-lik31/src/test/kotlin")
-# UI-free app sources (no android.* / androidx.* imports) and their tests
-PURE_APP="$ROOT/app/src/main/kotlin/net/ayukawayen/lik31/ui/generator/GeneratorState.kt"
-[ -f "$PURE_APP" ] && SOURCES+=("$PURE_APP")
+# UI-free app sources: every file that imports nothing from android.* / androidx.*
+while IFS= read -r f; do SOURCES+=("$f"); done < <(grep -L -r -E '^import androidx?\.' "$ROOT/app/src/main/kotlin" --include='*.kt' || true)
 [ -d "$ROOT/app/src/test/kotlin" ] && SOURCES+=("$ROOT/app/src/test/kotlin")
 
 java -cp "$KOTLINC_CP" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \

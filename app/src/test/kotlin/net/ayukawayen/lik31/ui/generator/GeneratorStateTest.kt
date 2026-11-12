@@ -1,8 +1,10 @@
 package net.ayukawayen.lik31.ui.generator
 
 import net.ayukawayen.lik31.core.Lik31
+import net.ayukawayen.lik31.data.ServiceConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -112,5 +114,174 @@ class GeneratorStateTest {
         assertFalse(text.contains(typed.mainHash))
         assertFalse(text.contains(typed.password))
         assertFalse(text.contains(typed.raw))
+    }
+
+    // ---- remembered service settings (phase 4) ----
+
+    private fun service(value: String, saved: ServiceConfig? = null) = GeneratorEvent.ServiceKeyChanged(value, saved)
+
+    @Test
+    fun knownServiceRestoresLengthAndSymbol() {
+        val s = GeneratorState().send(
+            GeneratorEvent.MainKeyChanged("correct horse"),
+            service("google.com", ServiceConfig(14, "@")),
+        )
+        assertEquals(14, s.length)
+        assertEquals("@", s.symbol)
+        assertTrue(s.configApplied)
+        assertEquals("Tas57@Fug72Wer", s.password)
+    }
+
+    @Test
+    fun unknownServiceUsesLastHandPickedSettings() {
+        val s = GeneratorState().send(
+            GeneratorEvent.LengthChanged(30),
+            GeneratorEvent.SymbolChanged("#"),
+            service("goo"),
+        )
+        assertEquals(30, s.length)
+        assertEquals("#", s.symbol)
+        assertFalse(s.configApplied)
+    }
+
+    @Test
+    fun typingPastAKnownServiceRevertsToHandPickedSettings() {
+        val s = GeneratorState().send(
+            service("goo"),
+            service("google.com", ServiceConfig(14, "@")),
+            service("google.com.tw"),
+        )
+        assertEquals(Lik31.DEFAULT_LENGTH, s.length)
+        assertEquals("", s.symbol)
+        assertFalse(s.configApplied)
+    }
+
+    @Test
+    fun editingAfterRestoreClearsTheAppliedHintAndBecomesTheNewFallback() {
+        val s = GeneratorState().send(
+            service("google.com", ServiceConfig(14, "@")),
+            GeneratorEvent.LengthChanged(18),
+        )
+        assertFalse(s.configApplied)
+        assertEquals("@", s.symbol)
+        val next = s.send(service("other"))
+        assertEquals(18, next.length)
+        assertEquals("", next.symbol)
+    }
+
+    @Test
+    fun corruptRememberedValuesAreRepaired() {
+        val s = GeneratorState().send(service("x", ServiceConfig(500, "😀")))
+        assertEquals(75, s.length)
+        assertEquals("", s.symbol)
+    }
+
+    @Test
+    fun configToRememberNeedsAPassword() {
+        assertNull(GeneratorState().configToRemember)
+        val s = typed.send(GeneratorEvent.SymbolChanged("!"), GeneratorEvent.LengthChanged(16))
+        assertEquals(ServiceConfig(16, "!"), s.configToRemember)
+        assertEquals("github.com", typed.send(service("GitHub.com")).normalizedServiceKey)
+    }
+
+    // ---- saved main key (phase 5) ----
+
+    private val savedHash = Lik31.hashMainKey("correct horse")
+    private val restored = GeneratorState().send(GeneratorEvent.SavedHashLoaded(savedHash))
+
+    @Test
+    fun savedHashIsUsedWhileMainKeyFieldIsEmpty() {
+        assertTrue(restored.saveMainKey)
+        assertTrue(restored.hasSavedMainKey)
+        assertEquals("Yey06Puf32Jix51Net95", restored.send(service("github.com")).password)
+    }
+
+    @Test
+    fun nothingSavedLeavesSwitchOff() {
+        val s = GeneratorState().send(GeneratorEvent.SavedHashLoaded(null))
+        assertFalse(s.saveMainKey)
+        assertFalse(s.hasSavedMainKey)
+        assertEquals(GeneratorState.EMPTY_MAIN_HASH, s.mainHash)
+    }
+
+    @Test
+    fun typingOverridesSavedKeyAndClearingReturnsToIt() {
+        val typedOther = restored.send(service("github.com"), GeneratorEvent.MainKeyChanged("other"))
+        assertEquals(Lik31.generate("other", "github.com", "", 20), typedOther.password)
+        assertTrue(typedOther.shouldPersistMainKey)
+        val cleared = typedOther.send(GeneratorEvent.MainKeyChanged(""))
+        assertEquals("Yey06Puf32Jix51Net95", cleared.password)
+        assertFalse(cleared.shouldPersistMainKey)
+    }
+
+    @Test
+    fun retypingTheSavedKeyDoesNotNeedPersisting() {
+        assertFalse(restored.send(GeneratorEvent.MainKeyChanged("correct horse")).shouldPersistMainKey)
+    }
+
+    @Test
+    fun switchOnWithTypedKeyPersistsAndRecordsIt() {
+        val s = GeneratorState().send(
+            GeneratorEvent.MainKeyChanged("correct horse"),
+            GeneratorEvent.SaveMainKeyToggled(true),
+        )
+        assertTrue(s.shouldPersistMainKey)
+        val done = s.send(GeneratorEvent.MainKeyPersisted)
+        assertEquals(savedHash, done.savedHash)
+        assertFalse(done.shouldPersistMainKey)
+    }
+
+    @Test
+    fun emptyMainKeyIsNeverPersisted() {
+        val s = GeneratorState().send(GeneratorEvent.SaveMainKeyToggled(true), service("github.com"))
+        assertTrue(s.saveMainKey)
+        assertFalse(s.shouldPersistMainKey)
+    }
+
+    @Test
+    fun switchOffWithNothingSavedJustTurnsOff() {
+        val s = GeneratorState().send(GeneratorEvent.SaveMainKeyToggled(true), GeneratorEvent.SaveMainKeyToggled(false))
+        assertFalse(s.saveMainKey)
+        assertFalse(s.confirmDisableSave)
+    }
+
+    @Test
+    fun switchOffWithSavedKeyAsksFirst() {
+        val asking = restored.send(GeneratorEvent.SaveMainKeyToggled(false))
+        assertTrue(asking.confirmDisableSave)
+        assertTrue(asking.saveMainKey)
+        assertTrue(asking.hasSavedMainKey)
+
+        val cancelled = asking.send(GeneratorEvent.DisableSaveCancelled)
+        assertFalse(cancelled.confirmDisableSave)
+        assertTrue(cancelled.hasSavedMainKey)
+
+        val confirmed = asking.send(service("github.com"), GeneratorEvent.DisableSaveConfirmed)
+        assertFalse(confirmed.confirmDisableSave)
+        assertFalse(confirmed.saveMainKey)
+        assertFalse(confirmed.hasSavedMainKey)
+        // back to the (empty) typed main key
+        assertEquals("Kup69Wes25Hid99Gig54", confirmed.password)
+    }
+
+    @Test
+    fun persistFailureKeepsSwitchOnlyIfAnOlderKeyExists() {
+        val fresh = GeneratorState().send(
+            GeneratorEvent.MainKeyChanged("k"),
+            GeneratorEvent.SaveMainKeyToggled(true),
+            GeneratorEvent.MainKeyPersistFailed,
+        )
+        assertFalse(fresh.saveMainKey)
+        assertTrue(fresh.saveFailed)
+
+        val replacing = restored.send(GeneratorEvent.MainKeyChanged("k"), GeneratorEvent.MainKeyPersistFailed)
+        assertTrue(replacing.saveMainKey)
+        assertTrue(replacing.saveFailed)
+        assertEquals(savedHash, replacing.savedHash)
+    }
+
+    @Test
+    fun toStringDoesNotLeakSavedHash() {
+        assertFalse(restored.toString().contains(savedHash))
     }
 }

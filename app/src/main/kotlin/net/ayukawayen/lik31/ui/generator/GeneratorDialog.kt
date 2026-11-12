@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -43,8 +45,11 @@ fun GeneratorDialog(
     val serviceKeyFocus = remember { FocusRequester() }
     val symbolFocus = remember { FocusRequester() }
 
-    // Nothing is saved in the MVP, so typing always starts at the main key.
-    LaunchedEffect(Unit) { mainKeyFocus.requestFocus() }
+    // With a saved main key, typing starts at the service key (as in the old app).
+    // Also runs when saving is switched on or off, moving on to / back to the right field.
+    LaunchedEffect(state.hasSavedMainKey) {
+        if (state.hasSavedMainKey) serviceKeyFocus.requestFocus() else mainKeyFocus.requestFocus()
+    }
 
     Box(
         modifier = Modifier
@@ -86,14 +91,19 @@ fun GeneratorDialog(
                 MainKeyField(
                     value = state.mainKey,
                     visible = state.mainKeyVisible,
+                    hasSavedKey = state.hasSavedMainKey,
+                    saveEnabled = state.saveMainKey,
+                    saveFailed = state.saveFailed,
                     focusRequester = mainKeyFocus,
                     onValueChange = { onEvent(GeneratorEvent.MainKeyChanged(it)) },
                     onToggleVisibility = { onEvent(GeneratorEvent.ToggleMainKeyVisibility) },
+                    onSaveToggle = { onEvent(GeneratorEvent.SaveMainKeyToggled(it)) },
                     onNext = { serviceKeyFocus.requestFocus() },
                 )
                 ServiceKeyRow(
                     serviceKey = state.serviceKey,
                     symbol = state.symbol,
+                    configApplied = state.configApplied,
                     serviceKeyFocus = serviceKeyFocus,
                     symbolFocus = symbolFocus,
                     onServiceKeyChange = { onEvent(GeneratorEvent.ServiceKeyChanged(it)) },
@@ -109,6 +119,24 @@ fun GeneratorDialog(
                     onLengthChange = { onEvent(GeneratorEvent.LengthChanged(it)) },
                 )
             }
+        }
+
+        if (state.confirmDisableSave) {
+            AlertDialog(
+                onDismissRequest = { onEvent(GeneratorEvent.DisableSaveCancelled) },
+                title = { Text(stringResource(R.string.disable_save_title)) },
+                text = { Text(stringResource(R.string.disable_save_text)) },
+                confirmButton = {
+                    TextButton(onClick = { onEvent(GeneratorEvent.DisableSaveConfirmed) }) {
+                        Text(stringResource(R.string.disable_save_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { onEvent(GeneratorEvent.DisableSaveCancelled) }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+            )
         }
     }
 }

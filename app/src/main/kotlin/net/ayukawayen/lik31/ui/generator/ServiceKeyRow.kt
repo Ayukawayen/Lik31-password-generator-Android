@@ -1,12 +1,15 @@
 package net.ayukawayen.lik31.ui.generator
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,11 +28,13 @@ import net.ayukawayen.lik31.R
 /**
  * Service key (wide) and the optional one-character symbol (narrow).
  * The keyboard's Done key on either field copies the password and closes.
+ * A note appears while length and symbol are the ones remembered for this service.
  */
 @Composable
 fun ServiceKeyRow(
     serviceKey: String,
     symbol: String,
+    configApplied: Boolean,
     serviceKeyFocus: FocusRequester,
     symbolFocus: FocusRequester,
     onServiceKeyChange: (String) -> Unit,
@@ -37,46 +42,56 @@ fun ServiceKeyRow(
     onDone: () -> Unit,
 ) {
     val mono = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        OutlinedTextField(
-            value = serviceKey,
-            onValueChange = onServiceKeyChange,
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(serviceKeyFocus),
-            label = { Text(stringResource(R.string.service_key)) },
-            singleLine = true,
-            textStyle = mono,
-            // A normal text keyboard (so non-Latin service names can be typed),
-            // with auto-capitalization and auto-correction turned off.
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.None,
-                autoCorrectEnabled = false,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { onDone() }),
-        )
-        OutlinedTextField(
-            value = symbol,
-            onValueChange = onSymbolChange,
-            modifier = Modifier
-                .width(76.dp)
-                .focusRequester(symbolFocus),
-            label = { Text(stringResource(R.string.symbol)) },
-            singleLine = true,
-            textStyle = mono.copy(textAlign = TextAlign.Center),
-            // Password keyboard type (shown in clear) = no suggestions, easy access to symbols.
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.None,
-                autoCorrectEnabled = false,
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { onDone() }),
-        )
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = serviceKey,
+                onValueChange = onServiceKeyChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(serviceKeyFocus),
+                label = { Text(stringResource(R.string.service_key)) },
+                singleLine = true,
+                textStyle = mono,
+                // A normal text keyboard (so non-Latin service names can be typed),
+                // with auto-capitalization and auto-correction turned off.
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { onDone() }),
+            )
+            OutlinedTextField(
+                value = symbol,
+                onValueChange = onSymbolChange,
+                modifier = Modifier
+                    .width(76.dp)
+                    .focusRequester(symbolFocus),
+                label = { Text(stringResource(R.string.symbol)) },
+                singleLine = true,
+                textStyle = mono.copy(textAlign = TextAlign.Center),
+                // Password keyboard type (shown in clear) = no suggestions, easy access to symbols.
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { onDone() }),
+            )
+        }
+        if (configApplied) {
+            Text(
+                text = stringResource(R.string.config_applied),
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }

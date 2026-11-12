@@ -12,7 +12,7 @@ import net.ayukawayen.lik31.ui.generator.GeneratorViewModel
 import net.ayukawayen.lik31.ui.theme.Lik31Theme
 
 /**
- * The whole MVP: a dialog-style card over a dimmed background.
+ * The generator: a dialog-style card over a dimmed background.
  * Type the keys, tap the password, and the app copies it and closes.
  */
 class GeneratorActivity : ComponentActivity() {
@@ -39,13 +39,15 @@ class GeneratorActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // Leaving the screen (home, app switch, screen off) discards everything
-        // typed, so the main key never lingers in memory. Rotation is exempt.
+        // typed, so a typed main key never lingers in memory. Rotation is exempt.
         if (!isChangingConfigurations) finish()
     }
 
     private fun copyAndClose() {
         val password = viewModel.state.password
         if (password.isEmpty()) return
+        // Remember this service's settings (and the main key, if saving is on).
+        viewModel.onCopied()
         ClipboardWriter.copySensitive(this, password)
         finish()
     }

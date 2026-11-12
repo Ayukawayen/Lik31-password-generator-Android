@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Lik31 glyph, after U+26BF SQUARED KEY: a key standing inside a square. -->
+  <rect x="3.5" y="3.5" width="17" height="17" rx="2.5" stroke-width="2"/>
+  <circle cx="11" cy="9" r="2.6" stroke-width="1.8"/>
+  <path d="M11 11.6V17.4M11 14.4H14.2M11 17.4H14.2" stroke-width="1.8"/>
+</svg>

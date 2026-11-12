@@ -15,4 +15,16 @@
     <string name="close">關閉</string>
     <string name="clip_label">密碼</string>
     <string name="toast_copied">密碼已複製</string>
+    <string name="tile_label">Lik31 密碼</string>
+    <string name="tile_subtitle">產生密碼</string>
+    <string name="main_key_saved">主密鑰・已儲存</string>
+    <string name="main_key_saved_placeholder">輸入即可變更</string>
+    <string name="main_key_is_saved">主密鑰已儲存</string>
+    <string name="save_main_key">儲存主密鑰於此裝置</string>
+    <string name="save_failed">無法儲存主密鑰</string>
+    <string name="config_applied">已套用上次設定</string>
+    <string name="disable_save_title">停止儲存主密鑰？</string>
+    <string name="disable_save_text">將刪除此裝置上加密保存的主密鑰，之後每次開啟都需要重新輸入。已記住的服務長度與符號會保留。</string>
+    <string name="disable_save_confirm">停止儲存</string>
+    <string name="cancel">取消</string>
 </resources>
