@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder key glyph; replaced by the final artwork in phase 3. Drawn inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- bow (ring) -->
+    <path
+        android:pathData="M42,54m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0"
+        android:strokeColor="#FFD6E3FF"
+        android:strokeWidth="6" />
+    <!-- shaft and two teeth -->
+    <path
+        android:pathData="M53,54H80M70,54V64M79,54V62"
+        android:strokeColor="#FFD6E3FF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+</vector>

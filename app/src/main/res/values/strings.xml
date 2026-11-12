@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lik31 Password</string>
+    <string name="generator_title">Lik31 Password Generator</string>
+    <string name="main_key">Main Key</string>
+    <string name="show_main_key">Show main key</string>
+    <string name="hide_main_key">Hide main key</string>
+    <string name="service_key">Service Key</string>
+    <string name="symbol">Sym.</string>
+    <string name="password_placeholder">Enter a service key to generate</string>
+    <string name="copy_hint">Tap the password to copy &amp; close</string>
+    <string name="length">Length</string>
+    <string name="decrease_length">Shorter</string>
+    <string name="increase_length">Longer</string>
+    <string name="close">Close</string>
+    <string name="clip_label">Password</string>
+    <string name="toast_copied">Password copied</string>
+</resources>

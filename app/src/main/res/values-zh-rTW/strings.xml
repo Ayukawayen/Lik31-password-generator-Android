@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lik31 密碼</string>
+    <string name="generator_title">Lik31 密碼產生器</string>
+    <string name="main_key">主密鑰</string>
+    <string name="show_main_key">顯示主密鑰</string>
+    <string name="hide_main_key">隱藏主密鑰</string>
+    <string name="service_key">服務金鑰</string>
+    <string name="symbol">符號</string>
+    <string name="password_placeholder">輸入服務金鑰以產生密碼</string>
+    <string name="copy_hint">點一下密碼即複製並關閉</string>
+    <string name="length">長度</string>
+    <string name="decrease_length">縮短</string>
+    <string name="increase_length">加長</string>
+    <string name="close">關閉</string>
+    <string name="clip_label">密碼</string>
+    <string name="toast_copied">密碼已複製</string>
+</resources>
