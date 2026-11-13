@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Lik31 密碼</string>
-    <string name="generator_title">Lik31 密碼產生器</string>
     <string name="main_key">主密鑰</string>
     <string name="show_main_key">顯示主密鑰</string>
     <string name="hide_main_key">隱藏主密鑰</string>
     <string name="service_key">服務金鑰</string>
     <string name="symbol">符號</string>
     <string name="password_placeholder">輸入服務金鑰以產生密碼</string>
-    <string name="copy_hint">點一下密碼即複製並關閉</string>
     <string name="length">長度</string>
     <string name="decrease_length">縮短</string>
     <string name="increase_length">加長</string>
@@ -18,13 +16,16 @@
     <string name="tile_label">Lik31 密碼</string>
     <string name="tile_subtitle">產生密碼</string>
     <string name="main_key_saved">主密鑰・已儲存</string>
-    <string name="main_key_saved_placeholder">輸入即可變更</string>
-    <string name="main_key_is_saved">主密鑰已儲存</string>
+    <string name="main_key_saved_placeholder">使用已儲存的主密鑰</string>
     <string name="save_main_key">儲存主密鑰於此裝置</string>
-    <string name="save_failed">無法儲存主密鑰</string>
     <string name="config_applied">已套用上次設定</string>
     <string name="disable_save_title">停止儲存主密鑰？</string>
     <string name="disable_save_text">將刪除此裝置上加密保存的主密鑰，之後每次開啟都需要重新輸入。已記住的服務長度與符號會保留。</string>
     <string name="disable_save_confirm">停止儲存</string>
     <string name="cancel">取消</string>
+    <string name="main_key_replacing">主密鑰・將取代已儲存</string>
+    <string name="main_key_save_failed">主密鑰・無法儲存</string>
+    <string name="save_pending">複製密碼時儲存</string>
+    <string name="release_to_copy">放開即複製並關閉</string>
+    <string name="copy_and_close">複製並關閉</string>
 </resources>

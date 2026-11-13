@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="brand_name" translatable="false">Lik31</string>
     <string name="app_name">Lik31 Password</string>
-    <string name="generator_title">Lik31 Password Generator</string>
     <string name="main_key">Main Key</string>
     <string name="show_main_key">Show main key</string>
     <string name="hide_main_key">Hide main key</string>
     <string name="service_key">Service Key</string>
     <string name="symbol">Sym.</string>
     <string name="password_placeholder">Enter a service key to generate</string>
-    <string name="copy_hint">Tap the password to copy &amp; close</string>
     <string name="length">Length</string>
     <string name="decrease_length">Shorter</string>
     <string name="increase_length">Longer</string>
@@ -18,13 +17,16 @@
     <string name="tile_label">Lik31 Password</string>
     <string name="tile_subtitle">Generate password</string>
     <string name="main_key_saved">Main Key · saved</string>
-    <string name="main_key_saved_placeholder">Type to change</string>
-    <string name="main_key_is_saved">Main key is saved</string>
+    <string name="main_key_saved_placeholder">Using the saved main key</string>
     <string name="save_main_key">Save main key on this device</string>
-    <string name="save_failed">Could not save the main key</string>
     <string name="config_applied">Last settings applied</string>
     <string name="disable_save_title">Stop saving the main key?</string>
     <string name="disable_save_text">The encrypted main key stored on this device will be deleted. You will need to type the main key every time. Remembered lengths and symbols are kept.</string>
     <string name="disable_save_confirm">Stop saving</string>
     <string name="cancel">Cancel</string>
+    <string name="main_key_replacing">Main Key · will replace saved</string>
+    <string name="main_key_save_failed">Main Key · could not save</string>
+    <string name="save_pending">Will be saved when you copy</string>
+    <string name="release_to_copy">Release to copy &amp; close</string>
+    <string name="copy_and_close">Copy &amp; close</string>
 </resources>

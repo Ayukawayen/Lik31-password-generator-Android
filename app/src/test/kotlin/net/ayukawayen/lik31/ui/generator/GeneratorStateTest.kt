@@ -284,4 +284,46 @@ class GeneratorStateTest {
     fun toStringDoesNotLeakSavedHash() {
         assertFalse(restored.toString().contains(savedHash))
     }
+
+    // ---- main key field presentation ----
+
+    @Test
+    fun mainKeyModes() {
+        assertEquals(MainKeyMode.Normal, GeneratorState().mainKeyMode)
+        assertEquals(MainKeyMode.Normal, typed.mainKeyMode)
+        assertEquals(MainKeyMode.UsingSaved, restored.mainKeyMode)
+        assertEquals(MainKeyMode.RetypedSaved, restored.send(GeneratorEvent.MainKeyChanged("correct horse")).mainKeyMode)
+        assertEquals(MainKeyMode.ReplacingSaved, restored.send(GeneratorEvent.MainKeyChanged("other")).mainKeyMode)
+        assertEquals(
+            MainKeyMode.UsingSaved,
+            restored.send(GeneratorEvent.MainKeyChanged("other"), GeneratorEvent.MainKeyChanged("")).mainKeyMode,
+        )
+    }
+
+    @Test
+    fun savedKeyCannotBeRevealedButTypedTextCan() {
+        assertTrue(GeneratorState().canRevealMainKey)
+        assertFalse(restored.canRevealMainKey)
+        assertTrue(restored.send(GeneratorEvent.MainKeyChanged("x")).canRevealMainKey)
+    }
+
+    @Test
+    fun pendingBadgeFollowsWhatWouldBeSavedOnCopy() {
+        assertFalse(typed.mainKeySavePending)
+        assertTrue(typed.send(GeneratorEvent.SaveMainKeyToggled(true)).mainKeySavePending)
+        assertFalse(restored.mainKeySavePending)
+        assertTrue(restored.send(GeneratorEvent.MainKeyChanged("other")).mainKeySavePending)
+        assertFalse(restored.send(GeneratorEvent.MainKeyChanged("correct horse")).mainKeySavePending)
+    }
+
+    @Test
+    fun saveFailureShowsUntilTheNextEdit() {
+        val failed = GeneratorState().send(
+            GeneratorEvent.MainKeyChanged("k"),
+            GeneratorEvent.SaveMainKeyToggled(true),
+            GeneratorEvent.MainKeyPersistFailed,
+        )
+        assertEquals(MainKeyMode.SaveFailed, failed.mainKeyMode)
+        assertEquals(MainKeyMode.Normal, failed.send(GeneratorEvent.MainKeyChanged("k2")).mainKeyMode)
+    }
 }

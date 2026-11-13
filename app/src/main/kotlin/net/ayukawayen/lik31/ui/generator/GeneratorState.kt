@@ -54,6 +54,28 @@ data class GeneratorState(
     val normalizedServiceKey: String
         get() = Lik31.normalizeServiceKey(serviceKey)
 
+    /** How the main key field presents itself; see [MainKeyMode]. */
+    val mainKeyMode: MainKeyMode
+        get() = when {
+            saveFailed -> MainKeyMode.SaveFailed
+            savedHash == null -> MainKeyMode.Normal
+            mainKey.isEmpty() -> MainKeyMode.UsingSaved
+            mainHash == savedHash -> MainKeyMode.RetypedSaved
+            else -> MainKeyMode.ReplacingSaved
+        }
+
+    /**
+     * The eye button is offered only when there is typed text to reveal.
+     * A saved main key exists only as a hash: its characters and even its
+     * length are unknown, so there is nothing to show.
+     */
+    val canRevealMainKey: Boolean
+        get() = mainKeyMode != MainKeyMode.UsingSaved
+
+    /** The typed main key will be written to the vault when a password is copied. */
+    val mainKeySavePending: Boolean
+        get() = shouldPersistMainKey
+
     /** What to remember for the current service when the password is copied. */
     val configToRemember: ServiceConfig?
         get() = if (canCopy) ServiceConfig(length, symbol) else null
@@ -67,6 +89,24 @@ data class GeneratorState(
         /** Hash of the empty main key; the browser extension starts from the same value. */
         val EMPTY_MAIN_HASH: String = Lik31.hashMainKey("")
     }
+}
+
+/** Presentation of the main key field. */
+enum class MainKeyMode {
+    /** Nothing saved: an ordinary masked input. */
+    Normal,
+
+    /** A key is saved and the field is empty: the saved hash is in use. Nothing to display or reveal. */
+    UsingSaved,
+
+    /** A key is saved and the user typed that same key again. */
+    RetypedSaved,
+
+    /** A key is saved and a different one is typed: it is used now and replaces the saved one on copy. */
+    ReplacingSaved,
+
+    /** Storing the main key failed; cleared by the next edit or attempt. */
+    SaveFailed,
 }
 
 sealed interface GeneratorEvent {
@@ -93,7 +133,7 @@ sealed interface GeneratorEvent {
 }
 
 fun GeneratorState.reduce(event: GeneratorEvent): GeneratorState = when (event) {
-    is GeneratorEvent.MainKeyChanged -> copy(mainKey = event.value).recomputed()
+    is GeneratorEvent.MainKeyChanged -> copy(mainKey = event.value, saveFailed = false).recomputed()
 
     is GeneratorEvent.ServiceKeyChanged -> {
         // Same rule as the browser extension: a remembered service restores its
