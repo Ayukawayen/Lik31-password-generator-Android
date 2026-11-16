@@ -14,7 +14,7 @@ package net.ayukawayen.lik31.ui.generator
  * [TARGET_LINES] lines; at [MIN_FONT_SP] accept more lines.
  */
 object PasswordLines {
-    const val MAX_FONT_SP: Int = 20
+    const val MAX_FONT_SP: Int = 18
     const val MIN_FONT_SP: Int = 14
     const val TARGET_LINES: Int = 2
 

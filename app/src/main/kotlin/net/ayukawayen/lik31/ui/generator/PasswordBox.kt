@@ -54,7 +54,7 @@ private val BoxPaddingV = 8.dp
  * - Always at least two lines tall, with or without a password, so the card
  *   does not change height while typing.
  * - Lines are broken by [PasswordLines] (first line as full as possible,
- *   shrinking from 20sp to 14sp before a third line is allowed).
+ *   shrinking from 18sp to 14sp before a third line is allowed).
  * - A tap copies and closes immediately. A long press shows "release to copy
  *   & close" alternating with the password; releasing copies and closes,
  *   sliding off the box before releasing cancels.

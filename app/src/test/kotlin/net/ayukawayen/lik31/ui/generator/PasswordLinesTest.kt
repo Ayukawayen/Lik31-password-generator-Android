@@ -14,24 +14,24 @@ class PasswordLinesTest {
 
     @Test
     fun firstLineIsFilled() {
-        val lines = PasswordLines.wrap("Yey06Puf32Jix51Net95", width) { mono(it, 20) }
-        // 0.6 * 20 * 1.15 = 13.8 -> 19 characters fit in 272
-        assertEquals(listOf("Yey06Puf32Jix51Net9", "5"), lines)
+        val lines = PasswordLines.wrap("Yey06Puf32Jix51Net95Kab", width) { mono(it, 18) }
+        // 0.6 * 18 * 1.15 = 12.42 -> 21 characters fit in 272
+        assertEquals(listOf("Yey06Puf32Jix51Net95K", "ab"), lines)
     }
 
     @Test
     fun symbolsDoNotCauseEarlyBreaks() {
         for (sym in listOf("!", "?", "-", "/", " ", ".")) {
-            val pw = "Yey06" + sym + "Puf32Jix51Net9"
-            val lines = PasswordLines.wrap(pw, width) { mono(it, 20) }
-            assertEquals(sym, 19, lines[0].length)
+            val pw = "Yey06" + sym + "Puf32Jix51Net95Kab"
+            val lines = PasswordLines.wrap(pw, width) { mono(it, 18) }
+            assertEquals(sym, 21, lines[0].length)
         }
     }
 
     @Test
-    fun startsAtTwentySpWhenTwoLinesSuffice() {
-        val layout = PasswordLines.fit("A".repeat(38), width, mono)
-        assertEquals(20, layout.fontSizeSp)
+    fun startsAtEighteenSpWhenTwoLinesSuffice() {
+        val layout = PasswordLines.fit("A".repeat(42), width, mono)
+        assertEquals(18, layout.fontSizeSp)
         assertEquals(2, layout.lines.size)
     }
 
@@ -39,7 +39,7 @@ class PasswordLinesTest {
     fun shrinksUntilTwoLinesFit() {
         val text = "A".repeat(50)
         val layout = PasswordLines.fit(text, width, mono)
-        assertTrue(layout.fontSizeSp in 15..19)
+        assertTrue(layout.fontSizeSp in 15..17)
         assertEquals(2, layout.lines.size)
         assertEquals(text, layout.lines.joinToString(""))
         // and one size larger would not have fitted
