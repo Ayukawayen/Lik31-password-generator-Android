@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import net.ayukawayen.lik31.Lik31App
 import net.ayukawayen.lik31.core.Lik31
+import net.ayukawayen.lik31.data.StoredMainKey
+import javax.crypto.Cipher
 
 /**
  * Holds the screen state across configuration changes and connects the pure
@@ -18,8 +20,17 @@ class GeneratorViewModel(application: Application) : AndroidViewModel(applicatio
     private val vault = lik31App.mainKeyVault
     private val serviceConfigs = lik31App.serviceConfigs
 
-    var state by mutableStateOf(GeneratorState().reduce(GeneratorEvent.SavedHashLoaded(vault.load())))
+    var state by mutableStateOf(GeneratorState().reduce(initialVaultEvent()))
         private set
+
+    /** The automatic unlock prompt is offered once per launch, not again after a rotation. */
+    var autoUnlockOffered: Boolean = false
+
+    private fun initialVaultEvent(): GeneratorEvent = when (val stored = vault.read()) {
+        StoredMainKey.None -> GeneratorEvent.SavedHashLoaded(null)
+        is StoredMainKey.Unlocked -> GeneratorEvent.SavedHashLoaded(stored.mainHash)
+        StoredMainKey.Locked -> GeneratorEvent.SavedKeyLocked
+    }
 
     fun onEvent(event: GeneratorEvent) {
         val resolved = if (event is GeneratorEvent.ServiceKeyChanged) {
@@ -41,6 +52,24 @@ class GeneratorViewModel(application: Application) : AndroidViewModel(applicatio
     fun onCopied() {
         persistMainKeyIfNeeded()
         state.configToRemember?.let { serviceConfigs.save(state.normalizedServiceKey, it) }
+    }
+
+    /**
+     * First half of a biometric unlock: the cipher the prompt must authorise.
+     * Null when there is nothing to unlock, or the stored key turned out to be
+     * unusable (the state then asks for the main key to be typed again).
+     */
+    fun beginUnlock(): Cipher? {
+        if (!state.savedLocked) return null
+        val cipher = vault.beginUnlock()
+        if (cipher == null) state = state.reduce(GeneratorEvent.SavedKeyInvalidated)
+        return cipher
+    }
+
+    /** Second half: the prompt succeeded. On a decryption failure the key simply stays locked. */
+    fun completeUnlock(authorisedCipher: Cipher) {
+        val hash = vault.completeUnlock(authorisedCipher) ?: return
+        state = state.reduce(GeneratorEvent.SavedHashLoaded(hash))
     }
 
     private fun persistMainKeyIfNeeded() {

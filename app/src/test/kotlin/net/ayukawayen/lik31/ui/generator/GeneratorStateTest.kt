@@ -326,4 +326,109 @@ class GeneratorStateTest {
         assertEquals(MainKeyMode.SaveFailed, failed.mainKeyMode)
         assertEquals(MainKeyMode.Normal, failed.send(GeneratorEvent.MainKeyChanged("k2")).mainKeyMode)
     }
+
+    // ---- biometric lock (phase 6) ----
+
+    private val locked = GeneratorState().send(GeneratorEvent.SavedKeyLocked)
+
+    @Test
+    fun lockedKeyGeneratesNothingUntilUnlocked() {
+        val s = locked.send(service("github.com"))
+        assertTrue(s.savedLocked)
+        assertTrue(s.hasSavedMainKey)
+        assertTrue(s.saveMainKey)
+        assertEquals("", s.password)
+        assertFalse(s.canCopy)
+        assertEquals(MainKeyMode.Locked, s.mainKeyMode)
+        assertFalse(s.canRevealMainKey)
+
+        val unlocked = s.send(GeneratorEvent.SavedHashLoaded(savedHash))
+        assertFalse(unlocked.savedLocked)
+        assertEquals("Yey06Puf32Jix51Net95", unlocked.password)
+        assertEquals(MainKeyMode.UsingSaved, unlocked.mainKeyMode)
+    }
+
+    @Test
+    fun typingWhileLockedWorksForThisSessionButIsNotStored() {
+        val s = locked.send(service("github.com"), GeneratorEvent.MainKeyChanged("correct horse"))
+        assertEquals("Yey06Puf32Jix51Net95", s.password)
+        assertEquals(MainKeyMode.LockedTyped, s.mainKeyMode)
+        assertTrue(s.canRevealMainKey)
+        assertFalse(s.shouldPersistMainKey)
+        assertFalse(s.mainKeySavePending)
+        // clearing goes back to "locked, nothing to show"
+        assertEquals("", s.send(GeneratorEvent.MainKeyChanged("")).password)
+    }
+
+    @Test
+    fun unlockingAfterTypingFollowsTheNormalSavedRules() {
+        val same = locked.send(GeneratorEvent.MainKeyChanged("correct horse"), GeneratorEvent.SavedHashLoaded(savedHash))
+        assertEquals(MainKeyMode.RetypedSaved, same.mainKeyMode)
+        val other = locked.send(GeneratorEvent.MainKeyChanged("other"), GeneratorEvent.SavedHashLoaded(savedHash))
+        assertEquals(MainKeyMode.ReplacingSaved, other.mainKeyMode)
+        assertTrue(other.shouldPersistMainKey)
+    }
+
+    @Test
+    fun switchingOffWhileLockedStillAsksAndThenClears() {
+        val asking = locked.send(GeneratorEvent.SaveMainKeyToggled(false))
+        assertTrue(asking.confirmDisableSave)
+        val done = asking.send(GeneratorEvent.DisableSaveConfirmed)
+        assertFalse(done.hasSavedMainKey)
+        assertFalse(done.savedLocked)
+        assertFalse(done.saveMainKey)
+        assertEquals(MainKeyMode.Normal, done.mainKeyMode)
+    }
+
+    @Test
+    fun invalidatedKeyAsksForRetypeUntilSomethingIsTyped() {
+        val lost = locked.send(service("github.com"), GeneratorEvent.SavedKeyInvalidated)
+        assertFalse(lost.hasSavedMainKey)
+        assertFalse(lost.saveMainKey)
+        assertEquals(MainKeyMode.SavedLost, lost.mainKeyMode)
+        assertEquals(MainKeyMode.Normal, lost.send(GeneratorEvent.MainKeyChanged("k")).mainKeyMode)
+    }
+
+    @Test
+    fun toStringDoesNotLeakWhileLocked() {
+        val s = locked.send(GeneratorEvent.MainKeyChanged("correct horse"), service("github.com"))
+        assertFalse(s.toString().contains("correct horse"))
+        assertFalse(s.toString().contains(s.password))
+    }
+
+    // ---- warnings (phase 7) ----
+
+    @Test
+    fun emptyMainKeyWarningOnlyWhenAPasswordComesFromIt() {
+        assertFalse(GeneratorState().mainKeyEmptyWarning)
+        val s = GeneratorState().send(service("github.com"))
+        assertTrue(s.mainKeyEmptyWarning)
+        assertEquals(MainKeyMode.EmptyWarning, s.mainKeyMode)
+        assertEquals("Kup69Wes25Hid99Gig54", s.password)
+        assertFalse(typed.mainKeyEmptyWarning)
+        assertFalse(restored.send(service("github.com")).mainKeyEmptyWarning)
+        assertFalse(locked.send(service("github.com")).mainKeyEmptyWarning)
+    }
+
+    @Test
+    fun edgeWhitespaceWarning() {
+        assertFalse(typed.serviceKeyEdgeWhitespace)
+        assertFalse(GeneratorState().serviceKeyEdgeWhitespace)
+        assertTrue(typed.send(service("github.com ")).serviceKeyEdgeWhitespace)
+        assertTrue(typed.send(service(" github.com")).serviceKeyEdgeWhitespace)
+        assertTrue(typed.send(service("github.com\u3000")).serviceKeyEdgeWhitespace)
+        assertTrue(typed.send(service("github.com\t")).serviceKeyEdgeWhitespace)
+        assertFalse(typed.send(service("my bank")).serviceKeyEdgeWhitespace)
+        // the warning never blocks: the password is the browser's for that exact key
+        assertEquals("Gaf37Kif65Pig48Doz52", typed.send(service("github.com ")).password)
+    }
+
+    @Test
+    fun weakLengthWarning() {
+        assertFalse(typed.lengthIsWeak)
+        assertTrue(typed.send(GeneratorEvent.LengthChanged(12)).lengthIsWeak)
+        assertTrue(typed.send(GeneratorEvent.LengthChanged(6)).lengthIsWeak)
+        assertFalse(typed.send(GeneratorEvent.LengthChanged(13)).lengthIsWeak)
+        assertTrue(typed.send(service("x", ServiceConfig(8, ""))).lengthIsWeak)
+    }
 }

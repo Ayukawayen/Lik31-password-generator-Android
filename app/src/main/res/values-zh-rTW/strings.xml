@@ -28,4 +28,15 @@
     <string name="save_pending">複製密碼時儲存</string>
     <string name="release_to_copy">放開即複製並關閉</string>
     <string name="copy_and_close">複製並關閉</string>
+    <string name="main_key_empty">主密鑰・空白</string>
+    <string name="main_key_locked">主密鑰・已鎖定</string>
+    <string name="main_key_locked_placeholder">解鎖或輸入主密鑰</string>
+    <string name="main_key_session_only">主密鑰・僅本次使用</string>
+    <string name="main_key_lost">主密鑰・需重新輸入</string>
+    <string name="unlock_saved_key">解鎖已儲存的主密鑰</string>
+    <string name="service_key_whitespace">服務金鑰・含前後空白</string>
+    <string name="length_weak">長度（過短的密碼強度偏低）</string>
+    <string name="unlock_title">解鎖 Lik31</string>
+    <string name="unlock_subtitle">使用生物辨識解鎖已儲存的主密鑰</string>
+    <string name="unlock_type_instead">改為輸入主密鑰</string>
 </resources>

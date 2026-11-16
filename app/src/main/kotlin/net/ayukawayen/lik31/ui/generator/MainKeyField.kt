@@ -40,6 +40,9 @@ import net.ayukawayen.lik31.R
  * A saved main key exists only as a hash, so while it is in use
  * ([MainKeyMode.UsingSaved]) the field stays empty, shows no dots (the length
  * is unknown) and offers no eye button.
+ *
+ * While the saved key still awaits its biometric unlock ([locked]), an unlock
+ * button is shown; typing a main key instead works for this session.
  */
 @Composable
 fun MainKeyField(
@@ -47,18 +50,27 @@ fun MainKeyField(
     mode: MainKeyMode,
     visible: Boolean,
     canReveal: Boolean,
+    locked: Boolean,
     saveEnabled: Boolean,
     savePending: Boolean,
     focusRequester: FocusRequester,
     onValueChange: (String) -> Unit,
     onToggleVisibility: () -> Unit,
     onSaveToggle: (Boolean) -> Unit,
+    onUnlock: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val replacing = mode == MainKeyMode.ReplacingSaved
+    // Tertiary colour = "notice this, nothing is blocked".
+    val highlighted = mode == MainKeyMode.ReplacingSaved ||
+        mode == MainKeyMode.EmptyWarning ||
+        mode == MainKeyMode.SavedLost
     val accent = MaterialTheme.colorScheme.tertiary
     val labelRes = when (mode) {
         MainKeyMode.Normal -> R.string.main_key
+        MainKeyMode.EmptyWarning -> R.string.main_key_empty
+        MainKeyMode.Locked -> R.string.main_key_locked
+        MainKeyMode.LockedTyped -> R.string.main_key_session_only
+        MainKeyMode.SavedLost -> R.string.main_key_lost
         MainKeyMode.UsingSaved, MainKeyMode.RetypedSaved -> R.string.main_key_saved
         MainKeyMode.ReplacingSaved -> R.string.main_key_replacing
         MainKeyMode.SaveFailed -> R.string.main_key_save_failed
@@ -72,15 +84,19 @@ fun MainKeyField(
         label = {
             Text(
                 text = stringResource(labelRes),
-                color = if (replacing) accent else Color.Unspecified,
+                color = if (highlighted) accent else Color.Unspecified,
                 maxLines = 1,
             )
         },
         placeholder = {
-            if (mode == MainKeyMode.UsingSaved) Text(stringResource(R.string.main_key_saved_placeholder), maxLines = 1)
+            when (mode) {
+                MainKeyMode.UsingSaved -> Text(stringResource(R.string.main_key_saved_placeholder), maxLines = 1)
+                MainKeyMode.Locked -> Text(stringResource(R.string.main_key_locked_placeholder), maxLines = 1)
+                else -> Unit
+            }
         },
         isError = mode == MainKeyMode.SaveFailed,
-        colors = if (replacing) {
+        colors = if (highlighted) {
             OutlinedTextFieldDefaults.colors(focusedBorderColor = accent, unfocusedBorderColor = accent)
         } else {
             OutlinedTextFieldDefaults.colors()
@@ -102,6 +118,15 @@ fun MainKeyField(
                         Icon(
                             painter = painterResource(if (visible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
                             contentDescription = stringResource(if (visible) R.string.hide_main_key else R.string.show_main_key),
+                        )
+                    }
+                }
+                if (locked) {
+                    IconButton(onClick = onUnlock) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_lock_open),
+                            contentDescription = stringResource(R.string.unlock_saved_key),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }

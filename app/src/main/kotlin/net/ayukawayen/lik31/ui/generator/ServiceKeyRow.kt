@@ -10,11 +10,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -30,12 +32,14 @@ import net.ayukawayen.lik31.R
  * The keyboard's Done key on either field copies the password and closes.
  * An icon in the service key field shows that length and symbol are the ones
  * remembered for this service (an icon, so the layout height never changes).
+ * Likewise a whitespace warning is shown by recolouring the label and border.
  */
 @Composable
 fun ServiceKeyRow(
     serviceKey: String,
     symbol: String,
     configApplied: Boolean,
+    edgeWhitespace: Boolean,
     serviceKeyFocus: FocusRequester,
     symbolFocus: FocusRequester,
     onServiceKeyChange: (String) -> Unit,
@@ -43,6 +47,7 @@ fun ServiceKeyRow(
     onDone: () -> Unit,
 ) {
     val mono = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace)
+    val accent = MaterialTheme.colorScheme.tertiary
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -53,7 +58,19 @@ fun ServiceKeyRow(
             modifier = Modifier
                 .weight(1f)
                 .focusRequester(serviceKeyFocus),
-            label = { Text(stringResource(R.string.service_key), maxLines = 1) },
+            // Leading/trailing whitespace changes the password: flag it, never block it.
+            label = {
+                Text(
+                    text = stringResource(if (edgeWhitespace) R.string.service_key_whitespace else R.string.service_key),
+                    color = if (edgeWhitespace) accent else Color.Unspecified,
+                    maxLines = 1,
+                )
+            },
+            colors = if (edgeWhitespace) {
+                OutlinedTextFieldDefaults.colors(focusedBorderColor = accent, unfocusedBorderColor = accent)
+            } else {
+                OutlinedTextFieldDefaults.colors()
+            },
             singleLine = true,
             textStyle = mono,
             trailingIcon = if (configApplied) {

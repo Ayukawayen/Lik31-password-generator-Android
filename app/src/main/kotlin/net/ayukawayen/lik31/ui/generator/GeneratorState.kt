@@ -19,8 +19,12 @@ data class GeneratorState(
 
     /** Position of the "save main key" switch. */
     val saveMainKey: Boolean = false,
-    /** The main key hash stored on this device, if any. */
+    /** The main key hash stored on this device, once readable (see [savedLocked]). */
     val savedHash: String? = null,
+    /** A main key is stored but still needs a biometric unlock; its hash is not available. */
+    val savedLocked: Boolean = false,
+    /** The stored main key became unreadable (biometrics changed) and was removed. */
+    val savedKeyLost: Boolean = false,
     /** True while the "stop saving?" confirmation is showing. */
     val confirmDisableSave: Boolean = false,
     /** True after storing the main key failed. */
@@ -44,12 +48,17 @@ data class GeneratorState(
     val canCopy: Boolean
         get() = raw.isNotEmpty()
 
+    /** A main key is stored on the device, unlocked or not. */
     val hasSavedMainKey: Boolean
-        get() = savedHash != null
+        get() = savedHash != null || savedLocked
 
-    /** True when the typed main key should be written to the vault. An empty main key is never saved. */
+    /**
+     * True when the typed main key should be written to the vault. An empty
+     * main key is never saved, and nothing is overwritten while the stored key
+     * is still locked: a key typed then is used for this session only.
+     */
     val shouldPersistMainKey: Boolean
-        get() = saveMainKey && mainKey.isNotEmpty() && mainHash != savedHash
+        get() = saveMainKey && !savedLocked && mainKey.isNotEmpty() && mainHash != savedHash
 
     val normalizedServiceKey: String
         get() = Lik31.normalizeServiceKey(serviceKey)
@@ -58,7 +67,9 @@ data class GeneratorState(
     val mainKeyMode: MainKeyMode
         get() = when {
             saveFailed -> MainKeyMode.SaveFailed
-            savedHash == null -> MainKeyMode.Normal
+            savedLocked -> if (mainKey.isEmpty()) MainKeyMode.Locked else MainKeyMode.LockedTyped
+            savedKeyLost && mainKey.isEmpty() -> MainKeyMode.SavedLost
+            savedHash == null -> if (mainKeyEmptyWarning) MainKeyMode.EmptyWarning else MainKeyMode.Normal
             mainKey.isEmpty() -> MainKeyMode.UsingSaved
             mainHash == savedHash -> MainKeyMode.RetypedSaved
             else -> MainKeyMode.ReplacingSaved
@@ -70,7 +81,24 @@ data class GeneratorState(
      * length are unknown, so there is nothing to show.
      */
     val canRevealMainKey: Boolean
-        get() = mainKeyMode != MainKeyMode.UsingSaved
+        get() = mainKey.isNotEmpty() || !hasSavedMainKey
+
+    // ---- warnings: none of them blocks anything, the password is still generated ----
+
+    /** A password is being generated from the EMPTY main key (allowed, as in the browser). */
+    val mainKeyEmptyWarning: Boolean
+        get() = canCopy && mainKey.isEmpty() && !hasSavedMainKey
+
+    /**
+     * Leading/trailing whitespace is part of the service key and changes the
+     * password; keyboards like to add a space after a suggestion.
+     */
+    val serviceKeyEdgeWhitespace: Boolean
+        get() = serviceKey.isNotEmpty() && (serviceKey.first().isWhitespace() || serviceKey.last().isWhitespace())
+
+    /** Short passwords are weak: 12 characters carry only about 40 bits. */
+    val lengthIsWeak: Boolean
+        get() = length <= WEAK_LENGTH
 
     /** The typed main key will be written to the vault when a password is copied. */
     val mainKeySavePending: Boolean
@@ -83,11 +111,14 @@ data class GeneratorState(
     /** Never print secrets (main key, its hash, or passwords) into logs. */
     override fun toString(): String =
         "GeneratorState(serviceKeyLength=${serviceKey.length}, length=$length, hasSymbol=${symbol.isNotEmpty()}, " +
-            "saveMainKey=$saveMainKey, hasSavedMainKey=$hasSavedMainKey)"
+            "saveMainKey=$saveMainKey, hasSavedMainKey=$hasSavedMainKey, savedLocked=$savedLocked)"
 
     companion object {
         /** Hash of the empty main key; the browser extension starts from the same value. */
         val EMPTY_MAIN_HASH: String = Lik31.hashMainKey("")
+
+        /** Lengths up to this are flagged as weak. */
+        const val WEAK_LENGTH: Int = 12
     }
 }
 
@@ -95,6 +126,18 @@ data class GeneratorState(
 enum class MainKeyMode {
     /** Nothing saved: an ordinary masked input. */
     Normal,
+
+    /** Nothing saved, nothing typed, yet a password is shown: it comes from the empty main key. */
+    EmptyWarning,
+
+    /** A key is saved but awaits a biometric unlock; nothing typed. No password can be generated. */
+    Locked,
+
+    /** A key is saved and locked; the typed key is used for this session only and is not stored. */
+    LockedTyped,
+
+    /** The saved key was removed because it became unreadable; the main key must be typed again. */
+    SavedLost,
 
     /** A key is saved and the field is empty: the saved hash is in use. Nothing to display or reveal. */
     UsingSaved,
@@ -121,8 +164,14 @@ sealed interface GeneratorEvent {
     data class LengthChanged(val value: Int) : GeneratorEvent
     data object ToggleMainKeyVisibility : GeneratorEvent
 
-    /** Start-up: what the vault holds (null = nothing saved). */
+    /** What the vault holds, at start-up or after an unlock (null = nothing saved). */
     data class SavedHashLoaded(val hash: String?) : GeneratorEvent
+
+    /** Start-up: a main key is stored but needs a biometric unlock. */
+    data object SavedKeyLocked : GeneratorEvent
+
+    /** The stored main key could not be unlocked any more and has been removed. */
+    data object SavedKeyInvalidated : GeneratorEvent
     data class SaveMainKeyToggled(val on: Boolean) : GeneratorEvent
     data object DisableSaveConfirmed : GeneratorEvent
     data object DisableSaveCancelled : GeneratorEvent
@@ -133,7 +182,8 @@ sealed interface GeneratorEvent {
 }
 
 fun GeneratorState.reduce(event: GeneratorEvent): GeneratorState = when (event) {
-    is GeneratorEvent.MainKeyChanged -> copy(mainKey = event.value, saveFailed = false).recomputed()
+    is GeneratorEvent.MainKeyChanged ->
+        copy(mainKey = event.value, saveFailed = false, savedKeyLost = false).recomputed()
 
     is GeneratorEvent.ServiceKeyChanged -> {
         // Same rule as the browser extension: a remembered service restores its
@@ -160,17 +210,29 @@ fun GeneratorState.reduce(event: GeneratorEvent): GeneratorState = when (event) 
     GeneratorEvent.ToggleMainKeyVisibility -> copy(mainKeyVisible = !mainKeyVisible)
 
     is GeneratorEvent.SavedHashLoaded ->
-        copy(savedHash = event.hash, saveMainKey = event.hash != null).recomputed()
+        copy(savedHash = event.hash, savedLocked = false, saveMainKey = event.hash != null).recomputed()
+
+    GeneratorEvent.SavedKeyLocked ->
+        copy(savedHash = null, savedLocked = true, saveMainKey = true).recomputed()
+
+    GeneratorEvent.SavedKeyInvalidated ->
+        copy(savedHash = null, savedLocked = false, saveMainKey = false, savedKeyLost = true).recomputed()
 
     is GeneratorEvent.SaveMainKeyToggled -> when {
         event.on -> copy(saveMainKey = true, saveFailed = false)
         // Turning it off deletes a stored key, so ask first.
-        savedHash != null -> copy(confirmDisableSave = true)
+        hasSavedMainKey -> copy(confirmDisableSave = true)
         else -> copy(saveMainKey = false, saveFailed = false)
     }
 
     GeneratorEvent.DisableSaveConfirmed ->
-        copy(savedHash = null, saveMainKey = false, confirmDisableSave = false, saveFailed = false).recomputed()
+        copy(
+            savedHash = null,
+            savedLocked = false,
+            saveMainKey = false,
+            confirmDisableSave = false,
+            saveFailed = false,
+        ).recomputed()
 
     GeneratorEvent.DisableSaveCancelled -> copy(confirmDisableSave = false)
 
@@ -189,7 +251,10 @@ fun GeneratorState.reduce(event: GeneratorEvent): GeneratorState = when (event) 
  */
 private fun GeneratorState.recomputed(): GeneratorState {
     val hash = if (mainKey.isEmpty() && savedHash != null) savedHash else Lik31.hashMainKey(mainKey)
-    return copy(mainHash = hash, raw = computeRaw(hash, serviceKey))
+    // Locked with nothing typed: the right hash is not available yet, and silently
+    // falling back to the empty main key would show a wrong password.
+    val unavailable = savedLocked && mainKey.isEmpty()
+    return copy(mainHash = hash, raw = if (unavailable) "" else computeRaw(hash, serviceKey))
 }
 
 /**

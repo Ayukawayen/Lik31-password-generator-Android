@@ -51,6 +51,7 @@ fun GeneratorDialog(
     state: GeneratorState,
     onEvent: (GeneratorEvent) -> Unit,
     onCopy: () -> Unit,
+    onUnlock: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val mainKeyFocus = remember { FocusRequester() }
@@ -59,8 +60,14 @@ fun GeneratorDialog(
 
     // With a saved main key, typing starts at the service key (as in the old app).
     // Also runs when saving is switched on or off, moving on to / back to the right field.
-    LaunchedEffect(state.hasSavedMainKey) {
-        if (state.hasSavedMainKey) serviceKeyFocus.requestFocus() else mainKeyFocus.requestFocus()
+    // While the saved key is still locked the main key field keeps the focus, ready for
+    // "type it instead"; a successful unlock then moves on to the service key.
+    LaunchedEffect(state.hasSavedMainKey, state.savedLocked) {
+        if (state.hasSavedMainKey && !state.savedLocked) {
+            serviceKeyFocus.requestFocus()
+        } else {
+            mainKeyFocus.requestFocus()
+        }
     }
 
     Box(
@@ -106,18 +113,21 @@ fun GeneratorDialog(
                         mode = state.mainKeyMode,
                         visible = state.mainKeyVisible,
                         canReveal = state.canRevealMainKey,
+                        locked = state.savedLocked,
                         saveEnabled = state.saveMainKey,
                         savePending = state.mainKeySavePending,
                         focusRequester = mainKeyFocus,
                         onValueChange = { onEvent(GeneratorEvent.MainKeyChanged(it)) },
                         onToggleVisibility = { onEvent(GeneratorEvent.ToggleMainKeyVisibility) },
                         onSaveToggle = { onEvent(GeneratorEvent.SaveMainKeyToggled(it)) },
+                        onUnlock = onUnlock,
                         onNext = { serviceKeyFocus.requestFocus() },
                     )
                     ServiceKeyRow(
                         serviceKey = state.serviceKey,
                         symbol = state.symbol,
                         configApplied = state.configApplied,
+                        edgeWhitespace = state.serviceKeyEdgeWhitespace,
                         serviceKeyFocus = serviceKeyFocus,
                         symbolFocus = symbolFocus,
                         onServiceKeyChange = { onEvent(GeneratorEvent.ServiceKeyChanged(it)) },
@@ -130,6 +140,7 @@ fun GeneratorDialog(
                     )
                     LengthSlider(
                         length = state.length,
+                        weak = state.lengthIsWeak,
                         onLengthChange = { onEvent(GeneratorEvent.LengthChanged(it)) },
                     )
                 }

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Biometric unlock of the saved main key (Android 9+). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
     <!--
         No cloud backup at all; data_extraction_rules additionally keeps the
         encrypted main key hash out of device-to-device transfers (its Keystore

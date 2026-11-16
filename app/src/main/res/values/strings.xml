@@ -29,4 +29,15 @@
     <string name="save_pending">Will be saved when you copy</string>
     <string name="release_to_copy">Release to copy &amp; close</string>
     <string name="copy_and_close">Copy &amp; close</string>
+    <string name="main_key_empty">Main Key · empty</string>
+    <string name="main_key_locked">Main Key · locked</string>
+    <string name="main_key_locked_placeholder">Unlock, or type the main key</string>
+    <string name="main_key_session_only">Main Key · this time only</string>
+    <string name="main_key_lost">Main Key · type it again</string>
+    <string name="unlock_saved_key">Unlock the saved main key</string>
+    <string name="service_key_whitespace">Service Key · has edge spaces</string>
+    <string name="length_weak">Length (short passwords are weak)</string>
+    <string name="unlock_title">Unlock Lik31</string>
+    <string name="unlock_subtitle">Use your biometric to unlock the saved main key</string>
+    <string name="unlock_type_instead">Type the main key instead</string>
 </resources>

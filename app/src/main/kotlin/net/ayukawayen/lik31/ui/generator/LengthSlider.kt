@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -29,18 +30,21 @@ import kotlin.math.roundToInt
 @Composable
 fun LengthSlider(
     length: Int,
+    weak: Boolean,
     onLengthChange: (Int) -> Unit,
 ) {
     val decreaseLabel = stringResource(R.string.decrease_length)
     val increaseLabel = stringResource(R.string.increase_length)
+    // Short lengths are flagged by colour only; the layout does not change.
+    val tone = if (weak) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_width),
-            contentDescription = stringResource(R.string.length),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            contentDescription = stringResource(if (weak) R.string.length_weak else R.string.length),
+            tint = tone,
         )
         IconButton(
             onClick = { onLengthChange(length - 1) },
@@ -67,6 +71,7 @@ fun LengthSlider(
             modifier = Modifier.widthIn(min = 28.dp),
             fontFamily = FontFamily.Monospace,
             style = MaterialTheme.typography.titleMedium,
+            color = if (weak) tone else Color.Unspecified,
             textAlign = TextAlign.End,
         )
     }
