@@ -1,5 +1,6 @@
 package net.ayukawayen.lik31.entry
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -7,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import net.ayukawayen.lik31.Lik31App
 import net.ayukawayen.lik31.system.ClipboardWriter
 import net.ayukawayen.lik31.ui.generator.GeneratorDialog
 import net.ayukawayen.lik31.ui.generator.GeneratorViewModel
@@ -24,10 +26,12 @@ class GeneratorActivity : ComponentActivity() {
     private var unlocking = false
     private var stopped = false
 
+    /** True while the settings screen is on top; the generator then survives onStop. */
+    private var settingsOpen = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Keep keys and passwords out of screenshots, screen recordings and the recents preview.
-        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        applySecureWindowSetting()
         enableEdgeToEdge()
 
         setContent {
@@ -37,6 +41,7 @@ class GeneratorActivity : ComponentActivity() {
                     onEvent = viewModel::onEvent,
                     onCopy = ::copyAndClose,
                     onUnlock = ::requestUnlock,
+                    onOpenSettings = ::openSettings,
                     onDismiss = ::finish,
                 )
             }
@@ -52,6 +57,9 @@ class GeneratorActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         stopped = false
+        settingsOpen = false
+        // May have been changed on the settings screen.
+        applySecureWindowSetting()
     }
 
     override fun onStop() {
@@ -59,8 +67,23 @@ class GeneratorActivity : ComponentActivity() {
         stopped = true
         // Leaving the screen (home, app switch, screen off) discards everything
         // typed, so a typed main key never lingers in memory. Rotation is exempt,
-        // and so is the biometric prompt in case it stops this activity.
-        if (!isChangingConfigurations && !unlocking) finish()
+        // and so are the biometric prompt (in case it stops this activity) and the
+        // settings screen (which closes the whole app itself if the user leaves from there).
+        if (!isChangingConfigurations && !unlocking && !settingsOpen) finish()
+    }
+
+    /** Keeps keys and passwords out of screenshots, screen recordings and the recents preview. */
+    private fun applySecureWindowSetting() {
+        val secure = (application as Lik31App).settings.secureWindow
+        window.setFlags(
+            if (secure) WindowManager.LayoutParams.FLAG_SECURE else 0,
+            WindowManager.LayoutParams.FLAG_SECURE,
+        )
+    }
+
+    private fun openSettings() {
+        settingsOpen = true
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     private fun requestUnlock() {

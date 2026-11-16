@@ -24,6 +24,15 @@ class PrefsServiceConfigStore(private val prefs: SharedPreferences) : ServiceCon
             .apply()
     }
 
+    override fun count(): Int = prefs.all.keys.count { it.startsWith(ServiceKeyIndex.PREFIX) }
+
+    override fun clearAll() {
+        val editor = prefs.edit()
+        // Keep the salt; only the entries go.
+        prefs.all.keys.filter { it.startsWith(ServiceKeyIndex.PREFIX) }.forEach { editor.remove(it) }
+        editor.apply()
+    }
+
     private fun loadOrCreateSalt(): ByteArray {
         val existing = prefs.getString(KEY_SALT, null)?.let(Hex::decode)
         if (existing != null && existing.size == ServiceKeyIndex.SALT_BYTES) return existing

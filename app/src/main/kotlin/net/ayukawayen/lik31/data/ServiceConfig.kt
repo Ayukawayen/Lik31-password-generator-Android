@@ -15,6 +15,12 @@ data class ServiceConfig(val length: Int, val symbol: String)
 interface ServiceConfigStore {
     fun load(normalizedServiceKey: String): ServiceConfig?
     fun save(normalizedServiceKey: String, config: ServiceConfig)
+
+    /** How many services have remembered settings. */
+    fun count(): Int
+
+    /** Forgets every remembered setting. */
+    fun clearAll()
 }
 
 /** Text form of a [ServiceConfig]: "<length>:<symbol>", e.g. "14:@" or "20:". */

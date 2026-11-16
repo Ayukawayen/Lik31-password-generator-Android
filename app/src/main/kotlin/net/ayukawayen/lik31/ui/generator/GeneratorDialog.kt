@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -38,6 +40,12 @@ import net.ayukawayen.lik31.R
 
 /** Height of the name tab sitting on the card's top edge; half of it overlaps the card. */
 private val TabHeight = 28.dp
+
+/**
+ * Extra room above the tabs, so the settings button can have a full-size
+ * touch target (TabHeadroom + TabHeight / 2 = half of 48dp) inside its parent.
+ */
+private val TabHeadroom = 10.dp
 
 /** Space between the blocks of the card. */
 private val BlockSpacing = 8.dp
@@ -52,6 +60,7 @@ fun GeneratorDialog(
     onEvent: (GeneratorEvent) -> Unit,
     onCopy: () -> Unit,
     onUnlock: () -> Unit,
+    onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val mainKeyFocus = remember { FocusRequester() }
@@ -81,7 +90,8 @@ fun GeneratorDialog(
             )
             // Keeps the card clear of system bars and above the keyboard.
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(16.dp),
+            // The usual 16dp at the top is split: TabHeadroom of it sits inside the card container.
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 16.dp - TabHeadroom),
         contentAlignment = Alignment.TopCenter,
     ) {
         // Card plus the name tab on its top edge. Taps here must not reach the dismiss handler.
@@ -98,7 +108,7 @@ fun GeneratorDialog(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = TabHeight / 2),
+                    .padding(top = TabHeadroom + TabHeight / 2),
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {
@@ -145,7 +155,13 @@ fun GeneratorDialog(
                     )
                 }
             }
-            NameTab(modifier = Modifier.padding(start = 12.dp))
+            NameTab(modifier = Modifier.padding(start = 12.dp, top = TabHeadroom))
+            SettingsTab(
+                onClick = onOpenSettings,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 2.dp),
+            )
         }
 
         if (state.confirmDisableSave) {
@@ -193,6 +209,33 @@ private fun NameTab(modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
+        }
+    }
+}
+
+/** Round settings button on the card's top edge; 28dp visible, 48dp touch target. */
+@Composable
+private fun SettingsTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .clickable(onClickLabel = stringResource(R.string.settings), onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier.size(TabHeight),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_settings),
+                    contentDescription = stringResource(R.string.settings),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
     }
 }

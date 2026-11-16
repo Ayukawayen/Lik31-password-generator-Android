@@ -35,6 +35,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".entry.SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings"
+            android:theme="@style/Theme.Lik31" />
+
         <service
             android:name=".entry.GeneratorTileService"
             android:exported="true"

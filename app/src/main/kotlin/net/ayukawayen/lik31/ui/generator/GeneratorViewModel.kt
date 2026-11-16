@@ -20,8 +20,15 @@ class GeneratorViewModel(application: Application) : AndroidViewModel(applicatio
     private val vault = lik31App.mainKeyVault
     private val serviceConfigs = lik31App.serviceConfigs
 
-    var state by mutableStateOf(GeneratorState().reduce(initialVaultEvent()))
+    private val settings = lik31App.settings
+
+    var state by mutableStateOf(initialState())
         private set
+
+    private fun initialState(): GeneratorState {
+        val length = settings.defaultLength
+        return GeneratorState(length = length, fallbackLength = length).reduce(initialVaultEvent())
+    }
 
     /** The automatic unlock prompt is offered once per launch, not again after a rotation. */
     var autoUnlockOffered: Boolean = false
@@ -70,6 +77,15 @@ class GeneratorViewModel(application: Application) : AndroidViewModel(applicatio
     fun completeUnlock(authorisedCipher: Cipher) {
         val hash = vault.completeUnlock(authorisedCipher) ?: return
         state = state.reduce(GeneratorEvent.SavedHashLoaded(hash))
+        if (!settings.protectWithBiometrics) {
+            // Protection was switched off in settings: now that the hash is
+            // readable, store it again without it. On failure it stays protected.
+            try {
+                vault.save(hash)
+            } catch (e: Exception) {
+                // keep the protected copy
+            }
+        }
     }
 
     private fun persistMainKeyIfNeeded() {
